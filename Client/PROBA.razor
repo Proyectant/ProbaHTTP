@@ -1,0 +1,56 @@
+﻿@page "/proba"
+@using ProbaHTTP.Shared
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager NM
+@inject HttpClient HTTP
+
+
+    <EditForm Model="uneokorisnik" OnValidSubmit="UbaciOsobu">
+        <div>
+            <div class="col-md-2"><label for="Naziv">Naziv</label></div>
+            <div><input type="text" @bind-value="uneokorisnik.Ime" /></div>
+        </div>
+        <div>
+            <div class="col-md-2"><label for="Naziv">Prezime</label></div>
+            <div><input type="text" @bind-value="uneokorisnik.Prezime" /></div>
+        </div>
+        <button class="btn btn-success btn-lg" @onclick="UbaciOsobu">Sacuvaj</button>
+    </EditForm>
+
+<button @onclick="PovuciListu">Povuci listu</button>
+<p>@foreach (Osoba o in ListaOsoba) { 
+@o.Ime}</p>
+<p>@ListaOsoba.Count</p>
+
+
+@code {
+    public Osoba uneokorisnik = new Osoba();
+    public Osoba osobazabazu = new Osoba();
+    List<Osoba> PomocnaLista = new List<Osoba>();
+    List<Osoba> ListaOsoba = new List<Osoba>();
+    public HubConnection KonekcijaOsoba;
+
+    protected override async Task OnInitializedAsync()
+    {
+        KonekcijaOsoba = new HubConnectionBuilder().
+                         WithUrl(NM.ToAbsoluteUri("/hubosoba")).Build();
+        await KonekcijaOsoba.StartAsync();
+    }
+
+
+    public void UbaciOsobu()
+    {
+        osobazabazu = uneokorisnik;
+        KonekcijaOsoba.SendAsync("UbaciOsobu", osobazabazu);
+        uneokorisnik = new Osoba();
+        osobazabazu = new Osoba();
+        StateHasChanged();
+    }
+
+    public async Task PovuciListu()
+    {
+        PomocnaLista = await HTTP.GetFromJsonAsync<List<Osoba>>("api/Osobas");
+        ListaOsoba = PomocnaLista;
+        PomocnaLista = new List<Osoba>();
+    }
+}
